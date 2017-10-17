@@ -3750,7 +3750,10 @@ static void it87_init_device(struct platform_device *pdev)
 	/* Check if tachometers are reset manually or by some reason */
 	mask = 0x70 & ~(sio_data->skip_fan << 4);
 	data->fan_main_ctrl = data->read(data, IT87_REG_FAN_MAIN_CTRL);
-	if ((data->fan_main_ctrl & mask) == 0) {
+	if (data->fan_main_ctrl == 0) {
+		data->fan_main_ctrl = 0x77;
+		data->write(data, IT87_REG_FAN_MAIN_CTRL, data->fan_main_ctrl);
+	} else if ((data->fan_main_ctrl & mask) == 0) {
 		/* Enable all fan tachometers */
 		data->fan_main_ctrl |= mask;
 		data->write(data, IT87_REG_FAN_MAIN_CTRL, data->fan_main_ctrl);
@@ -3760,6 +3763,12 @@ static void it87_init_device(struct platform_device *pdev)
 	tmp = data->read(data, IT87_REG_FAN_16BIT);
 
 	/* Set tachometers to 16-bit mode if needed */
+
+	if (tmp == 0) {
+		tmp = 0x30;
+		data->write(data, IT87_REG_FAN_16BIT, tmp);
+	}
+
 	if (has_fan16_config(data)) {
 		if (~tmp & 0x07 & data->has_fan) {
 			dev_dbg(&pdev->dev,
